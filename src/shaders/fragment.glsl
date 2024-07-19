@@ -1,6 +1,9 @@
-uniform vec3 color;
-varying float vAlpha;
+varying float vPattern;
+
+uniform vec3 uColor;
 
 void main() {
-  gl_FragColor = vec4(1., 1., 1., 1.);
+    vec3 color = vPattern * uColor;
+
+    csm_DiffuseColor = vec4(color, 1.);
 }
