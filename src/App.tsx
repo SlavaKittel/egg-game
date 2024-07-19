@@ -1,0 +1,52 @@
+import React, { useEffect, useState } from "react";
+import { Suspense, useMemo, useRef } from "react";
+import { OrbitControls } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
+import Component from "./components/Component";
+
+import styled from "styled-components";
+
+const App = () => {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded) {
+      document.body.classList.remove("loading");
+    }
+  }, [isLoaded]);
+
+  const handleLoad = () => {
+    setIsLoaded(true);
+  };
+
+  return (
+    <AppStyled>
+      {/* <LevaWrapper /> */}
+      <Canvas
+        camera={{
+          position: [0, 0, 6],
+          fov: 45,
+          near: 0.1,
+          far: 1000,
+        }}
+        gl={{ alpha: false }}
+      >
+        <color attach="background" args={["#000"]} />
+        <Suspense fallback={null}>
+          <Component />
+        </Suspense>
+        <OrbitControls />
+      </Canvas>
+    </AppStyled>
+  );
+};
+
+export default App;
+
+export const AppStyled = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+`;
