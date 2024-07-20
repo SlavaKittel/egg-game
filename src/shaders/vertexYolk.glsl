@@ -91,7 +91,7 @@ float smoothMod(float axis, float amp, float rad) {
 
 float getDisplacement(vec3 position) {
     vec3 pos = position;
-    pos.y -= uTime * 0.05 * uSpeed;
+    pos.z -= uTime * 0.05 * uSpeed;
     pos += cnoise(pos * 1.65) * uNoiseStrength;
 
     return smoothMod(pos.y * uFractAmount, 1., 1.5) * uDisplacementStrength;
@@ -99,7 +99,7 @@ float getDisplacement(vec3 position) {
 
 void main() {
     vec3 biTangent = cross(csm_Normal, tangent.xyz);
-    float shift = 0.01;
+    float shift = 0.2;
     vec3 posA = csm_Position + tangent.xyz * shift;
     vec3 posB = csm_Position + biTangent * shift;
 
