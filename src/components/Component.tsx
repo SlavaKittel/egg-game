@@ -1,27 +1,33 @@
 import * as THREE from "three";
 import { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useLoader } from "@react-three/fiber";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils";
+import { Perf } from "r3f-perf";
 import { MeshPhysicalMaterial } from "three";
 import CustomShaderMaterial from "three-custom-shader-material";
+import { TextureLoader } from "three/src/loaders/TextureLoader";
 import vertexYolkShader from "./../shaders/vertexYolk.glsl?raw";
 import fragmentYolkShader from "./../shaders/fragmentYolk.glsl?raw";
 
 const Component = () => {
   const materialYolkRef = useRef<THREE.ShaderMaterial>(null);
-  const meashYolkRef = useRef<THREE.Mesh>(null);
+  const eggRef = useRef<THREE.Mesh>(null);
 
   let increment = true;
   let counter = 0;
 
+  const widhtEgg = 0.72;
+  const shapeEgg = 0.03;
+  const sizeEgg = 1;
+  const rotationSpeedEgg = 0.2;
+
   const sizeYolk = 0.3;
   const widhtYolk = 0.62;
   const shapeYolk = 0.08;
-  const rotationSpeedYolk = 0.9;
   const speedYolk = 1000;
   const fractAmountYolk = 20;
 
-  function easeInOutQuad(t: number) {
+  function getEaseInOutQuad(t: number) {
     return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
   }
 
@@ -41,39 +47,91 @@ const Component = () => {
 
   useFrame(({ clock }, delta) => {
     const elapsedTime = clock.getElapsedTime() - delta;
-    if (meashYolkRef.current) {
-      meashYolkRef.current.rotation.y = elapsedTime * rotationSpeedYolk;
+    if (eggRef.current) {
+      eggRef.current.rotation.y = elapsedTime * rotationSpeedEgg;
     }
     if (materialYolkRef?.current && materialYolkRef.current?.uniforms) {
       materialYolkRef.current.uniforms.uTime.value = elapsedTime;
     }
     if (materialYolkRef?.current && materialYolkRef.current?.uniforms) {
       materialYolkRef.current.uniforms.uSpeed.value =
-        (easeInOutQuad(counter / 100) * 100) / speedYolk;
+        (getEaseInOutQuad(counter / 100) * 100) / speedYolk;
       materialYolkRef.current.uniforms.uFractAmount.value =
-        (easeInOutQuad(counter / 100) * 100) / fractAmountYolk;
+        (getEaseInOutQuad(counter / 100) * 100) / fractAmountYolk;
     }
   });
 
-  const yolkPoints: THREE.Vector2[] = [];
-  for (let deg = 0; deg <= 180; deg += 1) {
-    const rad = (Math.PI * deg) / 180;
-    const point = new THREE.Vector2(
-      (widhtYolk + shapeYolk * Math.cos(rad)) * Math.sin(rad) * sizeYolk,
-      -Math.cos(rad) * sizeYolk
-    );
-    yolkPoints.push(point);
-  }
+  const getEggShapeGeometry = (
+    widht: number,
+    shape: number,
+    size: number,
+    segments: number
+  ) => {
+    const points: THREE.Vector2[] = [];
+    for (let deg = 0; deg <= 180; deg += 1) {
+      const rad = (Math.PI * deg) / 180;
+      const point = new THREE.Vector2(
+        (widht + shape * Math.cos(rad)) * Math.sin(rad) * size,
+        -Math.cos(rad) * size
+      );
+      points.push(point);
+    }
 
-  const yolkGeometry = useMemo(() => {
-    const geometry = mergeVertices(new THREE.LatheGeometry(yolkPoints, 1000));
-    geometry.computeTangents();
+    const geometry = useMemo(() => {
+      const geometry = mergeVertices(new THREE.LatheGeometry(points, segments));
+      geometry.computeTangents();
+      return geometry;
+    }, []);
+
     return geometry;
-  }, []);
+  };
+
+  // TODO move in one function
+  // EggShell Texture
+  const getNameEggShellTexture = (type: string) => `./texture/egg/${type}.png`;
+  const [
+    eggShellRoughnessMap,
+  ] = useLoader(TextureLoader, [
+    getNameEggShellTexture("roughness"),
+  ]);
+  const repeatEggTextures = (texture: {
+    wrapS: number;
+    wrapT: number;
+    repeat: { x: number; y: number };
+  }) => {
+    const repeat = 0.07;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.x = repeat * 20;
+    texture.repeat.y = repeat * 20;
+  };
+  repeatEggTextures(eggShellRoughnessMap);
+  //
+
+  // EggNoise Texture
+  const getNameEggNoiseTexture = (type: string) => `./texture/noise/${type}.png`;
+  const [
+    eggNoiseMetalnessMap,
+  ] = useLoader(TextureLoader, [
+    getNameEggNoiseTexture("noise"),
+  ]);
+  const repeatEggNoiseTextures = (texture: {
+    wrapS: number;
+    wrapT: number;
+    repeat: { x: number; y: number };
+  }) => {
+    const repeat = 0.09;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.x = repeat * 20;
+    texture.repeat.y = repeat * 20;
+  };
+  repeatEggNoiseTextures(eggNoiseMetalnessMap);
+  // 
 
   const yolkUniforms = {
     uTime: { value: 0 },
-    uColor: { value: new THREE.Color("#fdf221") },
+    uColor: { value: new THREE.Color("#fdeb75") },
     uSpeed: { value: 0 },
     uNoiseStrength: { value: 0.5 },
     uDisplacementStrength: { value: 0.5 },
@@ -82,21 +140,46 @@ const Component = () => {
 
   return (
     <>
-      <mesh rotation={[0, 10, 0]} geometry={yolkGeometry} ref={meashYolkRef}>
-        <CustomShaderMaterial
-          ref={materialYolkRef}
-          baseMaterial={MeshPhysicalMaterial}
-          vertexShader={vertexYolkShader}
-          fragmentShader={fragmentYolkShader}
-          silent
-          roughness={0.5}
-          metalness={0.3}
-          reflectivity={0.46}
-          clearcoat={0}
-          ior={2.81}
-          iridescence={2.81}
-          uniforms={yolkUniforms}
-        />
+      <Perf position="top-left" />
+      <mesh ref={eggRef}>
+        <mesh
+          position={[0, 0, 0]}
+          rotation={[0, 10, 0]}
+          geometry={getEggShapeGeometry(widhtYolk, shapeYolk, sizeYolk, 50)}
+        >
+          <CustomShaderMaterial
+            ref={materialYolkRef}
+            baseMaterial={MeshPhysicalMaterial}
+            vertexShader={vertexYolkShader}
+            fragmentShader={fragmentYolkShader}
+            silent
+            roughness={0.5}
+            metalness={0.3}
+            reflectivity={0.46}
+            clearcoat={0}
+            ior={2.81}
+            iridescence={2.81}
+            uniforms={yolkUniforms}
+          />
+        </mesh>
+        <mesh
+          rotation={[0, 10, 0]}
+          geometry={getEggShapeGeometry(widhtEgg, shapeEgg, sizeEgg, 50)}
+        >
+          <meshPhysicalMaterial
+            displacementScale={0}
+            displacementBias={0}
+            metalnessMap={eggNoiseMetalnessMap}
+            roughnessMap={eggShellRoughnessMap}
+            color="#fdeb75"
+            metalness={0.3}
+            roughness={0.9}
+            transmission={1}
+            thickness={2}
+            transparent={true}
+            opacity={0.7}
+          />
+        </mesh>
       </mesh>
       <ambientLight color="#fff" intensity={2} />
       <directionalLight color="#fff" intensity={4} position={[0, 5, 2]} />
