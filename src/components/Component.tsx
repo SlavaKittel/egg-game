@@ -89,9 +89,7 @@ const Component = () => {
   // TODO move in one function
   // EggShell Texture
   const getNameEggShellTexture = (type: string) => `./texture/egg/${type}.png`;
-  const [
-    eggShellRoughnessMap,
-  ] = useLoader(TextureLoader, [
+  const [eggShellRoughnessMap] = useLoader(TextureLoader, [
     getNameEggShellTexture("roughness"),
   ]);
   const repeatEggTextures = (texture: {
@@ -99,7 +97,7 @@ const Component = () => {
     wrapT: number;
     repeat: { x: number; y: number };
   }) => {
-    const repeat = 0.07;
+    const repeat = 0.1;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.x = repeat * 20;
@@ -109,10 +107,9 @@ const Component = () => {
   //
 
   // EggNoise Texture
-  const getNameEggNoiseTexture = (type: string) => `./texture/noise/${type}.png`;
-  const [
-    eggNoiseMetalnessMap,
-  ] = useLoader(TextureLoader, [
+  const getNameEggNoiseTexture = (type: string) =>
+    `./texture/noise/${type}.png`;
+  const [eggNoiseMetalnessMap] = useLoader(TextureLoader, [
     getNameEggNoiseTexture("noise"),
   ]);
   const repeatEggNoiseTextures = (texture: {
@@ -120,14 +117,14 @@ const Component = () => {
     wrapT: number;
     repeat: { x: number; y: number };
   }) => {
-    const repeat = 0.09;
+    const repeat = 0.1;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.x = repeat * 20;
     texture.repeat.y = repeat * 20;
   };
   repeatEggNoiseTextures(eggNoiseMetalnessMap);
-  // 
+  //
 
   const yolkUniforms = {
     uTime: { value: 0 },
@@ -162,6 +159,21 @@ const Component = () => {
             uniforms={yolkUniforms}
           />
         </mesh>
+        {/* START BLUR */}
+        <mesh
+          rotation={[0, 10, 0]}
+          geometry={getEggShapeGeometry(widhtEgg, shapeEgg, sizeEgg, 10)}
+        >
+          <meshPhysicalMaterial
+            color="#fdeb75"
+            metalness={0.2}
+            roughness={0.3}
+            transparent={true}
+            opacity={0.7}
+            transmission={1}
+          />
+        </mesh>
+        {/* END BLUR */}
         <mesh
           rotation={[0, 10, 0]}
           geometry={getEggShapeGeometry(widhtEgg, shapeEgg, sizeEgg, 50)}
@@ -181,8 +193,8 @@ const Component = () => {
           />
         </mesh>
       </mesh>
-      <ambientLight color="#fff" intensity={2} />
-      <directionalLight color="#fff" intensity={4} position={[0, 5, 2]} />
+      <ambientLight color="#fff" intensity={1} />
+      <directionalLight color="#fff" intensity={3} position={[20, 10, 2]} />
     </>
   );
 };
