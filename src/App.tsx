@@ -35,7 +35,8 @@ const App = () => {
         <Suspense fallback={null}>
           <Component />
         </Suspense>
-        <OrbitControls />
+        {/* TODO delete */}
+        {/* <OrbitControls /> */}
       </Canvas>
     </AppStyled>
   );

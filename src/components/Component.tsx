@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils";
 import { Perf } from "r3f-perf";
@@ -9,12 +9,16 @@ import { TextureLoader } from "three/src/loaders/TextureLoader";
 import vertexYolkShader from "./../shaders/vertexYolk.glsl?raw";
 import fragmentYolkShader from "./../shaders/fragmentYolk.glsl?raw";
 
+let fractAmountYolk = 70;
+let counterSine = 0;
+let incrementCounter = true;
+
 const Component = () => {
   const materialYolkRef = useRef<THREE.ShaderMaterial>(null);
   const eggRef = useRef<THREE.Mesh>(null);
 
-  let increment = true;
-  let counter = 0;
+  const clickTimeoutRef = useRef<number | null>(null);
+  const [firstClick, setFirstClick] = useState(false);
 
   const widhtEgg = 0.72;
   const shapeEgg = 0.03;
@@ -25,27 +29,55 @@ const Component = () => {
   const widhtYolk = 0.62;
   const shapeYolk = 0.08;
   const speedYolk = 1000;
-  const fractAmountYolk = 20;
+
+  const timeClikedDelay = 2500;
 
   function getEaseInOutQuad(t: number) {
     return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
   }
 
-  window.addEventListener("click", (e) => {
-    if (counter === 0) {
-      const intervalId = setInterval(() => {
-        if (counter <= 0 && !increment) {
-          increment = true;
-          return clearInterval(intervalId);
-        }
-        if (counter > 100) increment = false;
-        if (!increment) return counter--;
-        return counter++;
-      }, 20);
+  const handleTouchStart = () => {
+    if (!firstClick) {
+      setFirstClick(true);
     }
-  });
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+    clickTimeoutRef.current = setTimeout(() => {
+      setFirstClick(false);
+      clickTimeoutRef.current = null;
+    }, timeClikedDelay);
+  };
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("touchstart", handleTouchStart);
+    return () => window.removeEventListener("touchstart", handleTouchStart);
+  }, []);
 
   useFrame(({ clock }, delta) => {
+    // Counter for constant sine animation, 0 - stop, 100 - max
+    if (counterSine === 100) incrementCounter = false;
+    if (counterSine === 0) incrementCounter = true;
+    if (counterSine >= 0 && counterSine < 100 && incrementCounter) {
+      counterSine++;
+    } else if (counterSine <= 100 && !incrementCounter) {
+      counterSine--;
+    }
+
+    // Fraction amount speed, 20 - fast, 70 - slow
+    if (firstClick && fractAmountYolk > 20) {
+      fractAmountYolk--;
+    } else if (!firstClick && fractAmountYolk < 70) {
+      fractAmountYolk++;
+    }
+
     const elapsedTime = clock.getElapsedTime() - delta;
     if (eggRef.current) {
       eggRef.current.rotation.y = elapsedTime * rotationSpeedEgg;
@@ -55,9 +87,9 @@ const Component = () => {
     }
     if (materialYolkRef?.current && materialYolkRef.current?.uniforms) {
       materialYolkRef.current.uniforms.uSpeed.value =
-        (getEaseInOutQuad(counter / 100) * 100) / speedYolk;
+        (getEaseInOutQuad(counterSine / 100) * 100) / speedYolk;
       materialYolkRef.current.uniforms.uFractAmount.value =
-        (getEaseInOutQuad(counter / 100) * 100) / fractAmountYolk;
+        (getEaseInOutQuad(counterSine / 100) * 100) / fractAmountYolk;
     }
   });
 
