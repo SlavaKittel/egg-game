@@ -12,24 +12,28 @@ import fragmentYolkShader from "./../shaders/fragmentYolk.glsl?raw";
 let fractAmountYolk = 70;
 let counterSine = 0;
 let incrementCounter = true;
+let rotationDefaultSpeedEgg = 0.005;
+const maxSpeedEgg = 8;
+let coeffOfSpeedEgg = 1;
 
 const Component = () => {
   const materialYolkRef = useRef<THREE.ShaderMaterial>(null);
   const eggRef = useRef<THREE.Mesh>(null);
-
   const clickTimeoutRef = useRef<number | null>(null);
   const [firstClick, setFirstClick] = useState(false);
+  const [timestamps, setTimestamps] = useState<{
+    prevClick: null | number;
+    lastClick: null | number;
+    timeDifference: null | number;
+  }>({ prevClick: null, lastClick: null, timeDifference: null });
 
   const widhtEgg = 0.72;
   const shapeEgg = 0.03;
   const sizeEgg = 1;
-  const rotationSpeedEgg = 0.2;
-
   const sizeYolk = 0.3;
   const widhtYolk = 0.62;
   const shapeYolk = 0.08;
   const speedYolk = 1000;
-
   const timeClikedDelay = 2500;
 
   function getEaseInOutQuad(t: number) {
@@ -37,6 +41,7 @@ const Component = () => {
   }
 
   const handleTouchStart = () => {
+    const now = Date.now();
     if (!firstClick) {
       setFirstClick(true);
     }
@@ -47,6 +52,17 @@ const Component = () => {
       setFirstClick(false);
       clickTimeoutRef.current = null;
     }, timeClikedDelay);
+
+    setTimestamps((prevState) => {
+      const timeDifference = prevState.lastClick
+        ? now - prevState.lastClick
+        : 0;
+      return {
+        prevClick: prevState.lastClick,
+        lastClick: now,
+        timeDifference: timeDifference,
+      };
+    });
   };
   useEffect(() => {
     return () => {
@@ -62,29 +78,55 @@ const Component = () => {
   }, []);
 
   useFrame(({ clock }, delta) => {
+    const timeDependence = delta * 50;
+
     // Counter for constant sine animation, 0 - stop, 100 - max
-    if (counterSine === 100) incrementCounter = false;
-    if (counterSine === 0) incrementCounter = true;
-    if (counterSine >= 0 && counterSine < 100 && incrementCounter) {
-      counterSine++;
-    } else if (counterSine <= 100 && !incrementCounter) {
-      counterSine--;
+    if (counterSine > 100) incrementCounter = false;
+    if (counterSine < 0) incrementCounter = true;
+    if (counterSine > -3 && counterSine < 100 && incrementCounter) {
+      counterSine = counterSine + timeDependence;
+    } else if (counterSine <= 103 && !incrementCounter) {
+      counterSine = counterSine - timeDependence;
     }
 
-    // Fraction amount speed, 20 - fast, 70 - slow
-    if (firstClick && fractAmountYolk > 20) {
-      fractAmountYolk--;
-    } else if (!firstClick && fractAmountYolk < 70) {
-      fractAmountYolk++;
-    }
+    // Fraction amount speed, 8 - fast, 70 - slow
+    if (
+      firstClick &&
+      fractAmountYolk > 8 &&
+      timestamps.timeDifference &&
+      timestamps.timeDifference < 200
+    )
+    if (
+      firstClick &&
+      fractAmountYolk > 14 &&
+      timestamps.timeDifference &&
+      timestamps.timeDifference < 800
+    )
+      fractAmountYolk = fractAmountYolk - timeDependence;
+    if (firstClick && fractAmountYolk > 20)
+      fractAmountYolk = fractAmountYolk - timeDependence;
+    if (!firstClick && fractAmountYolk < 70)
+      fractAmountYolk = fractAmountYolk + timeDependence;
 
-    const elapsedTime = clock.getElapsedTime() - delta;
+
+    // // Speed coefficient
+    if (!firstClick && coeffOfSpeedEgg > 1)
+      coeffOfSpeedEgg = coeffOfSpeedEgg - delta;
+    if (
+      firstClick &&
+      timestamps.timeDifference &&
+      timestamps.timeDifference < 1000 &&
+      coeffOfSpeedEgg < maxSpeedEgg
+    )
+      coeffOfSpeedEgg = coeffOfSpeedEgg + delta;
+
+  
+    // Rotation Egg
     if (eggRef.current) {
-      eggRef.current.rotation.y = elapsedTime * rotationSpeedEgg;
+      eggRef.current.rotation.y += rotationDefaultSpeedEgg * timeDependence * coeffOfSpeedEgg;
     }
-    if (materialYolkRef?.current && materialYolkRef.current?.uniforms) {
-      materialYolkRef.current.uniforms.uTime.value = elapsedTime;
-    }
+  
+    // Yolk animation
     if (materialYolkRef?.current && materialYolkRef.current?.uniforms) {
       materialYolkRef.current.uniforms.uSpeed.value =
         (getEaseInOutQuad(counterSine / 100) * 100) / speedYolk;
@@ -159,7 +201,6 @@ const Component = () => {
   //
 
   const yolkUniforms = {
-    uTime: { value: 0 },
     uColor: { value: new THREE.Color("#fdeb75") },
     uSpeed: { value: 0 },
     uNoiseStrength: { value: 0.5 },
@@ -174,7 +215,7 @@ const Component = () => {
         <mesh
           position={[0, 0, 0]}
           rotation={[0, 10, 0]}
-          geometry={getEggShapeGeometry(widhtYolk, shapeYolk, sizeYolk, 50)}
+          geometry={getEggShapeGeometry(widhtYolk, shapeYolk, sizeYolk, 10)}
         >
           <CustomShaderMaterial
             ref={materialYolkRef}
@@ -208,7 +249,7 @@ const Component = () => {
         {/* END BLUR */}
         <mesh
           rotation={[0, 10, 0]}
-          geometry={getEggShapeGeometry(widhtEgg, shapeEgg, sizeEgg, 50)}
+          geometry={getEggShapeGeometry(widhtEgg, shapeEgg, sizeEgg, 30)}
         >
           <meshPhysicalMaterial
             displacementScale={0}
