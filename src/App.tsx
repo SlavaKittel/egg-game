@@ -15,6 +15,8 @@ const App = () => {
     }
   }, [isLoaded]);
 
+
+  // TODO ?
   const handleLoad = () => {
     setIsLoaded(true);
   };

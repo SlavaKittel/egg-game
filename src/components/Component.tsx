@@ -1,13 +1,14 @@
 import * as THREE from "three";
-import { useMemo, useRef, useState, useEffect } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils";
 import { Perf } from "r3f-perf";
-import { MeshPhysicalMaterial } from "three";
-import CustomShaderMaterial from "three-custom-shader-material";
 import { TextureLoader } from "three/src/loaders/TextureLoader";
-import vertexYolkShader from "./../shaders/vertexYolk.glsl?raw";
-import fragmentYolkShader from "./../shaders/fragmentYolk.glsl?raw";
+import vertexYolkShader from "./../shaders/vertex.glsl?raw";
+import fragmentYolkShader from "./../shaders/fragment.glsl?raw";
+// TODO delete
+import vertexYolkShader2 from "./../shaders/vertexYolk.glsl?raw";
+import fragmentYolkShader2 from "./../shaders/fragmentYolk.glsl?raw";
 
 let fractAmountYolk = 70;
 let counterSine = 0;
@@ -120,12 +121,12 @@ const Component = () => {
     )
       coeffOfSpeedEgg = coeffOfSpeedEgg + delta;
 
-  
     // Rotation Egg
     if (eggRef.current) {
-      eggRef.current.rotation.y += rotationDefaultSpeedEgg * timeDependence * coeffOfSpeedEgg;
+      eggRef.current.rotation.y +=
+        rotationDefaultSpeedEgg * timeDependence * coeffOfSpeedEgg;
     }
-  
+
     // Yolk animation
     if (materialYolkRef?.current && materialYolkRef.current?.uniforms) {
       materialYolkRef.current.uniforms.uSpeed.value =
@@ -200,13 +201,46 @@ const Component = () => {
   repeatEggNoiseTextures(eggNoiseMetalnessMap);
   //
 
-  const yolkUniforms = {
-    uColor: { value: new THREE.Color("#fdeb75") },
-    uSpeed: { value: 0 },
-    uNoiseStrength: { value: 0.5 },
-    uDisplacementStrength: { value: 0.5 },
-    uFractAmount: { value: 0 },
-  };
+  const YolkShaderMaterial = React.forwardRef((props, ref) => {
+    const yolkUniforms = {
+      uColor: { value: new THREE.Color("#fdeb75") },
+      uSpeed: { value: 0 },
+      uNoiseStrength: { value: 0.5 },
+      uDisplacementStrength: { value: 0.5 },
+      uFractAmount: { value: 0 },
+      lightDirection: { value: new THREE.Vector3(5, 2, 1).normalize() },
+      ambientColor: { value: new THREE.Vector3(1, 1, 1).normalize() },
+      lightIntensity: { value: 0.5 }
+    };
+
+    const shaderMaterial = useMemo(
+      () =>
+        new THREE.ShaderMaterial({
+          vertexShader: vertexYolkShader,
+          fragmentShader: fragmentYolkShader,
+          uniforms: yolkUniforms,
+        }),
+      []
+    );
+
+    useFrame((state) => {
+      if (shaderMaterial.uniforms) {
+        shaderMaterial.uniforms.uSpeed.value =
+          (getEaseInOutQuad(counterSine / 100) * 100) / speedYolk;
+        shaderMaterial.uniforms.uFractAmount.value =
+          (getEaseInOutQuad(counterSine / 100) * 100) / fractAmountYolk;
+      }
+    });
+
+    return (
+      <primitive
+        object={shaderMaterial}
+        ref={ref}
+        attach="material"
+        {...props}
+      />
+    );
+  });
 
   return (
     <>
@@ -217,20 +251,7 @@ const Component = () => {
           rotation={[0, 10, 0]}
           geometry={getEggShapeGeometry(widhtYolk, shapeYolk, sizeYolk, 10)}
         >
-          <CustomShaderMaterial
-            ref={materialYolkRef}
-            baseMaterial={MeshPhysicalMaterial}
-            vertexShader={vertexYolkShader}
-            fragmentShader={fragmentYolkShader}
-            silent
-            roughness={0.5}
-            metalness={0.3}
-            reflectivity={0.46}
-            clearcoat={0}
-            ior={2.81}
-            iridescence={2.81}
-            uniforms={yolkUniforms}
-          />
+          <YolkShaderMaterial />
         </mesh>
         {/* START BLUR */}
         <mesh
@@ -260,14 +281,15 @@ const Component = () => {
             metalness={0.3}
             roughness={0.9}
             transmission={1}
-            thickness={2}
+            thickness={0.95}
             transparent={true}
-            opacity={0.7}
+            opacity={0.6}
           />
         </mesh>
       </mesh>
-      <ambientLight color="#fff" intensity={1} />
-      <directionalLight color="#fff" intensity={3} position={[20, 10, 2]} />
+      {/* TODO ambient don't used? */}
+      <ambientLight color="#fff" intensity={0.2} />
+      <directionalLight color="#fff" intensity={4} position={[20, 10, 2]} />
     </>
   );
 };
