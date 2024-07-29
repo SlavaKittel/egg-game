@@ -18,7 +18,6 @@ const maxSpeedEgg = 8;
 let coeffOfSpeedEgg = 1;
 
 const Component = () => {
-  const materialYolkRef = useRef<THREE.ShaderMaterial>(null);
   const eggRef = useRef<THREE.Mesh>(null);
   const clickTimeoutRef = useRef<number | null>(null);
   const [firstClick, setFirstClick] = useState(false);
@@ -95,22 +94,29 @@ const Component = () => {
       firstClick &&
       fractAmountYolk > 8 &&
       timestamps.timeDifference &&
-      timestamps.timeDifference < 200
+      timestamps.timeDifference < 100
     )
+      fractAmountYolk = fractAmountYolk - timeDependence;
+    if (
+      firstClick &&
+      fractAmountYolk > 10 &&
+      timestamps.timeDifference &&
+      timestamps.timeDifference < 130
+    )
+      fractAmountYolk = fractAmountYolk - timeDependence;
     if (
       firstClick &&
       fractAmountYolk > 14 &&
       timestamps.timeDifference &&
-      timestamps.timeDifference < 800
+      timestamps.timeDifference < 200
     )
       fractAmountYolk = fractAmountYolk - timeDependence;
-    if (firstClick && fractAmountYolk > 20)
+    if (firstClick && fractAmountYolk > 30)
       fractAmountYolk = fractAmountYolk - timeDependence;
     if (!firstClick && fractAmountYolk < 70)
       fractAmountYolk = fractAmountYolk + timeDependence;
 
-
-    // // Speed coefficient
+    // Speed coefficient
     if (!firstClick && coeffOfSpeedEgg > 1)
       coeffOfSpeedEgg = coeffOfSpeedEgg - delta;
     if (
@@ -125,14 +131,6 @@ const Component = () => {
     if (eggRef.current) {
       eggRef.current.rotation.y +=
         rotationDefaultSpeedEgg * timeDependence * coeffOfSpeedEgg;
-    }
-
-    // Yolk animation
-    if (materialYolkRef?.current && materialYolkRef.current?.uniforms) {
-      materialYolkRef.current.uniforms.uSpeed.value =
-        (getEaseInOutQuad(counterSine / 100) * 100) / speedYolk;
-      materialYolkRef.current.uniforms.uFractAmount.value =
-        (getEaseInOutQuad(counterSine / 100) * 100) / fractAmountYolk;
     }
   });
 
@@ -210,7 +208,7 @@ const Component = () => {
       uFractAmount: { value: 0 },
       lightDirection: { value: new THREE.Vector3(5, 2, 1).normalize() },
       ambientColor: { value: new THREE.Vector3(1, 1, 1).normalize() },
-      lightIntensity: { value: 0.5 }
+      lightIntensity: { value: 0.5 },
     };
 
     const shaderMaterial = useMemo(
@@ -224,6 +222,7 @@ const Component = () => {
     );
 
     useFrame((state) => {
+      // Yolk animation
       if (shaderMaterial.uniforms) {
         shaderMaterial.uniforms.uSpeed.value =
           (getEaseInOutQuad(counterSine / 100) * 100) / speedYolk;
