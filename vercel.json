@@ -1,5 +1,5 @@
 {
   "rewrites": [
-      {"source": "/(.*)", "destination": "/"}
+      {"source": "/egg", "destination": "https://slavakittel.com/$1"}
   ]
 }
