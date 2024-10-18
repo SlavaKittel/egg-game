@@ -3,7 +3,7 @@
       {"source": "/(.*)", "destination": "/"},
       {
         "source": "/slava/(.*)",
-        "destination": "https://slavakittel.com/$1"
+        "destination": "https://slavakittel.com"
       }
   ]
 }
