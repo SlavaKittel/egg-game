@@ -1,5 +1,9 @@
 {
   "rewrites": [
-      {"source": "/egg", "destination": "https://slavakittel.com/$1"}
+      {"source": "/(.*)", "destination": "/"},
+      {
+        "source": "/slava/(.*)",
+        "destination": "https://slavakittel.com/$1"
+      }
   ]
 }
