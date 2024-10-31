@@ -8,7 +8,7 @@
   ],
   "redirects": [
     {
-      "source": "/app2",
+      "source": "/app2/:path*",
       "destination": "https://slavakittel.com",
       "permanent": true
     }
