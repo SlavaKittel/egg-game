@@ -1,14 +1,13 @@
 {
   "rewrites": [
-    {"source": "/(.*)", "destination": "/"},
     {
-      "source": "/app2(.*)",
-      "destination": "https://slavakittel.com"
+      "source": "/app2/:path*",
+      "destination": "https://slavakittel.com/:path*"
     }
   ],
   "redirects": [
     {
-      "source": "/app2/:path*",
+      "source": "/app2",
       "destination": "https://slavakittel.com",
       "permanent": true
     }
