@@ -1,19 +1,16 @@
-import * as THREE from "three";
-import React, { useMemo, useRef, useState, useEffect } from "react";
-import { useFrame, useLoader } from "@react-three/fiber";
-import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils";
-import { Perf } from "r3f-perf";
-import { TextureLoader } from "three/src/loaders/TextureLoader";
-import vertexYolkShader from "./../shaders/vertex.glsl?raw";
-import fragmentYolkShader from "./../shaders/fragment.glsl?raw";
-// TODO delete
-import vertexYolkShader2 from "./../shaders/vertexYolk.glsl?raw";
-import fragmentYolkShader2 from "./../shaders/fragmentYolk.glsl?raw";
+import * as THREE from 'three';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { useFrame, useLoader } from '@react-three/fiber';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils';
+import { Perf } from 'r3f-perf';
+import { TextureLoader } from 'three/src/loaders/TextureLoader';
+import vertexYolkShader from './../shaders/vertex.glsl?raw';
+import fragmentYolkShader from './../shaders/fragment.glsl?raw';
 
 let fractAmountYolk = 70;
 let counterSine = 0;
 let incrementCounter = true;
-let rotationDefaultSpeedEgg = 0.005;
+const rotationDefaultSpeedEgg = 0.005;
 const maxSpeedEgg = 8;
 let coeffOfSpeedEgg = 1;
 
@@ -73,11 +70,15 @@ const Component = () => {
   }, []);
 
   useEffect(() => {
-    window.addEventListener("touchstart", handleTouchStart);
-    return () => window.removeEventListener("touchstart", handleTouchStart);
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('click', handleTouchStart);
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('click', handleTouchStart);
+    };
   }, []);
 
-  useFrame(({ clock }, delta) => {
+  useFrame((_, delta) => {
     const timeDependence = delta * 50;
 
     // Counter for constant sine animation, 0 - stop, 100 - max
@@ -138,14 +139,14 @@ const Component = () => {
     widht: number,
     shape: number,
     size: number,
-    segments: number
+    segments: number,
   ) => {
     const points: THREE.Vector2[] = [];
     for (let deg = 0; deg <= 180; deg += 1) {
       const rad = (Math.PI * deg) / 180;
       const point = new THREE.Vector2(
         (widht + shape * Math.cos(rad)) * Math.sin(rad) * size,
-        -Math.cos(rad) * size
+        -Math.cos(rad) * size,
       );
       points.push(point);
     }
@@ -163,7 +164,7 @@ const Component = () => {
   // EggShell Texture
   const getNameEggShellTexture = (type: string) => `./texture/egg/${type}.png`;
   const [eggShellRoughnessMap] = useLoader(TextureLoader, [
-    getNameEggShellTexture("roughness"),
+    getNameEggShellTexture('roughness'),
   ]);
   const repeatEggTextures = (texture: {
     wrapS: number;
@@ -183,7 +184,7 @@ const Component = () => {
   const getNameEggNoiseTexture = (type: string) =>
     `./texture/noise/${type}.png`;
   const [eggNoiseMetalnessMap] = useLoader(TextureLoader, [
-    getNameEggNoiseTexture("noise"),
+    getNameEggNoiseTexture('noise'),
   ]);
   const repeatEggNoiseTextures = (texture: {
     wrapS: number;
@@ -197,11 +198,10 @@ const Component = () => {
     texture.repeat.y = repeat * 20;
   };
   repeatEggNoiseTextures(eggNoiseMetalnessMap);
-  //
 
   const YolkShaderMaterial = React.forwardRef((props, ref) => {
     const yolkUniforms = {
-      uColor: { value: new THREE.Color("#fdeb75") },
+      uColor: { value: new THREE.Color('#fdeb75') },
       uSpeed: { value: 0 },
       uNoiseStrength: { value: 0.5 },
       uDisplacementStrength: { value: 0.5 },
@@ -218,10 +218,10 @@ const Component = () => {
           fragmentShader: fragmentYolkShader,
           uniforms: yolkUniforms,
         }),
-      []
+      [],
     );
 
-    useFrame((state) => {
+    useFrame(() => {
       // Yolk animation
       if (shaderMaterial.uniforms) {
         shaderMaterial.uniforms.uSpeed.value =

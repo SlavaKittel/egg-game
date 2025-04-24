@@ -1,25 +1,25 @@
-import React, { useEffect, useState } from "react";
-import { Suspense, useMemo, useRef } from "react";
-import { OrbitControls } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
-import Component from "./components/Component";
+import React, { useEffect, useState } from 'react';
+import { Suspense } from 'react';
+// import { OrbitControls } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import Component from './components/Component';
 
-import styled from "styled-components";
+import styled from 'styled-components';
 
 const App = () => {
+  // TODO ?
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (isLoaded) {
-      document.body.classList.remove("loading");
+      document.body.classList.remove('loading');
     }
   }, [isLoaded]);
 
-
   // TODO ?
-  const handleLoad = () => {
-    setIsLoaded(true);
-  };
+  // const handleLoad = () => {
+  //   setIsLoaded(true);
+  // };
 
   return (
     <AppStyled>
@@ -33,7 +33,7 @@ const App = () => {
         }}
         gl={{ alpha: false }}
       >
-        <color attach="background" args={["#000"]} />
+        <color attach="background" args={['#000']} />
         <Suspense fallback={null}>
           <Component />
         </Suspense>
