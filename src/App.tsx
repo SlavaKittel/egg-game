@@ -3,12 +3,16 @@ import { Suspense } from 'react';
 // import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import Component from './components/Component';
+import TextComponent from './components/TextComponent';
 
 import styled from 'styled-components';
 
 const App = () => {
   // TODO ?
   const [isLoaded, setIsLoaded] = useState(false);
+  // const [onSpeedChange, setSpeedChange] = useState<number>(0);
+  const [displaySpeed, setDisplayedSpeed] = useState<number>(0);
+  const [displayMaxSpeed, setDisplayedMaxpeed] = useState<number>(0);
 
   useEffect(() => {
     if (isLoaded) {
@@ -33,9 +37,17 @@ const App = () => {
         }}
         gl={{ alpha: false }}
       >
+        <TextComponent
+          displaySpeed={displaySpeed}
+          displayMaxSpeed={displayMaxSpeed}
+        />
         <color attach="background" args={['#000']} />
         <Suspense fallback={null}>
-          <Component />
+          <Component
+            setDisplayedSpeed={setDisplayedSpeed}
+            setDisplayedMaxpeed={setDisplayedMaxpeed}
+            displaySpeed={displaySpeed}
+          />
         </Suspense>
         {/* TODO delete */}
         {/* <OrbitControls /> */}

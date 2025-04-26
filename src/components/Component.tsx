@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useFrame, useLoader } from '@react-three/fiber';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils';
-import { Perf } from 'r3f-perf';
 import { TextureLoader } from 'three/src/loaders/TextureLoader';
 import vertexYolkShader from './../shaders/vertex.glsl?raw';
 import fragmentYolkShader from './../shaders/fragment.glsl?raw';
@@ -11,13 +10,19 @@ let fractAmountYolk = 70;
 let counterSine = 0;
 let incrementCounter = true;
 const rotationDefaultSpeedEgg = 0.005;
-const maxSpeedEgg = 8;
 let coeffOfSpeedEgg = 1;
-
-const Component = () => {
+const Component = ({
+  setDisplayedSpeed,
+  setDisplayedMaxpeed,
+  displaySpeed,
+}: {
+  setDisplayedSpeed: (value: number | ((prev: number) => number)) => void;
+  setDisplayedMaxpeed: (value: number | ((prev: number) => number)) => void;
+  displaySpeed: number;
+}) => {
   const eggRef = useRef<THREE.Mesh>(null);
   const clickTimeoutRef = useRef<number | null>(null);
-  const [firstClick, setFirstClick] = useState(false);
+  const [isClicking, setClicking] = useState(false);
   const [timestamps, setTimestamps] = useState<{
     prevClick: null | number;
     lastClick: null | number;
@@ -31,7 +36,10 @@ const Component = () => {
   const widhtYolk = 0.62;
   const shapeYolk = 0.08;
   const speedYolk = 1000;
-  const timeClikedDelay = 2500;
+  const timeClikedDelay = 250;
+
+  const latestSpeedRef = useRef(0);
+  const smoothedCoeffOfSpeedEgg = useRef(1);
 
   function getEaseInOutQuad(t: number) {
     return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
@@ -39,14 +47,14 @@ const Component = () => {
 
   const handleTouchStart = () => {
     const now = Date.now();
-    if (!firstClick) {
-      setFirstClick(true);
+    if (!isClicking) {
+      setClicking(true);
     }
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
     }
     clickTimeoutRef.current = setTimeout(() => {
-      setFirstClick(false);
+      setClicking(false);
       clickTimeoutRef.current = null;
     }, timeClikedDelay);
 
@@ -78,6 +86,27 @@ const Component = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const smoothingFactor = 0.05;
+    const updateMaxSpeedAfterDelay = () => {
+      const maxSpeed = displaySpeed;
+      setDisplayedMaxpeed((prevMaxSpeed) => {
+        return maxSpeed > prevMaxSpeed ? maxSpeed : prevMaxSpeed;
+      });
+    };
+
+    const interval = setInterval(() => {
+      setDisplayedSpeed((prev: number): number => {
+        const diff: number = latestSpeedRef.current - prev;
+        return prev + diff * smoothingFactor;
+      });
+    }, 120);
+
+    updateMaxSpeedAfterDelay();
+
+    return () => clearInterval(interval);
+  }, [displaySpeed]);
+
   useFrame((_, delta) => {
     const timeDependence = delta * 50;
 
@@ -92,46 +121,50 @@ const Component = () => {
 
     // Fraction amount speed, 8 - fast, 70 - slow
     if (
-      firstClick &&
+      isClicking &&
       fractAmountYolk > 8 &&
       timestamps.timeDifference &&
       timestamps.timeDifference < 100
     )
       fractAmountYolk = fractAmountYolk - timeDependence;
     if (
-      firstClick &&
+      isClicking &&
       fractAmountYolk > 10 &&
       timestamps.timeDifference &&
       timestamps.timeDifference < 130
     )
       fractAmountYolk = fractAmountYolk - timeDependence;
     if (
-      firstClick &&
+      isClicking &&
       fractAmountYolk > 14 &&
       timestamps.timeDifference &&
       timestamps.timeDifference < 200
     )
       fractAmountYolk = fractAmountYolk - timeDependence;
-    if (firstClick && fractAmountYolk > 30)
+    if (isClicking && fractAmountYolk > 30)
       fractAmountYolk = fractAmountYolk - timeDependence;
-    if (!firstClick && fractAmountYolk < 70)
+    if (!isClicking && fractAmountYolk < 70)
       fractAmountYolk = fractAmountYolk + timeDependence;
 
     // Speed coefficient
-    if (!firstClick && coeffOfSpeedEgg > 1)
-      coeffOfSpeedEgg = coeffOfSpeedEgg - delta;
-    if (
-      firstClick &&
-      timestamps.timeDifference &&
-      timestamps.timeDifference < 1000 &&
-      coeffOfSpeedEgg < maxSpeedEgg
-    )
-      coeffOfSpeedEgg = coeffOfSpeedEgg + delta;
+    if (!isClicking && coeffOfSpeedEgg > 1) coeffOfSpeedEgg -= delta;
+    if (isClicking && timestamps.timeDifference) {
+      const speedFactor = 1 - Math.min(1, timestamps.timeDifference / 1000);
+      coeffOfSpeedEgg = 1 + speedFactor * 3;
+    }
+
+    // Smooth animation coefficient
+    const smoothingFactor = 0.05;
+    smoothedCoeffOfSpeedEgg.current +=
+      (coeffOfSpeedEgg - smoothedCoeffOfSpeedEgg.current) * smoothingFactor;
 
     // Rotation Egg
     if (eggRef.current) {
       eggRef.current.rotation.y +=
-        rotationDefaultSpeedEgg * timeDependence * coeffOfSpeedEgg;
+        rotationDefaultSpeedEgg *
+        timeDependence *
+        smoothedCoeffOfSpeedEgg.current;
+      latestSpeedRef.current = rotationDefaultSpeedEgg * coeffOfSpeedEgg * 1000;
     }
   });
 
@@ -243,7 +276,6 @@ const Component = () => {
 
   return (
     <>
-      <Perf position="top-left" />
       <mesh ref={eggRef}>
         <mesh
           position={[0, 0, 0]}
